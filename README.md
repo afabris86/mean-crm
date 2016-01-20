@@ -1,1 +1,1 @@
-# Sample CRM using mean stack
+# Sample CRM using MEAN stack
