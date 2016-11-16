@@ -2,20 +2,17 @@
 // ======================================
 
 // CALL THE PACKAGES --------------------
-var express		= require('express'); // call express
-var app 		= express(); // define our app using express
-var bodyParser 	= require('body-parser'); // get body-parser
-var morgan 		= require('morgan'); // used to see requests
-var mongoose 	= require('mongoose'); // for working w/ our database
-var port 		= process.env.PORT || 8080; // set the port for our app
+var express		= require('express'); 		// call express
+var app 		= express(); 				// define our app using express
+var bodyParser 	= require('body-parser');	// get body-parser
+var morgan 		= require('morgan'); 		// used to see requests
+var mongoose 	= require('mongoose'); 		// for working w/ our database
+var jwt 		= require('jsonwebtoken'); 	// for token-based auth
+var path		= require('path');
+var config 		= require('./config');
 
-// DATABASE
-// pull the user model within our application
-var User = require('./app/models/user');
-// connect to the mongodb database instance on localhost
-mongoose.connect('mongodb://localhost:27017/myDatabase');
-
-// APP CONFIGURATION ---------------------
+// APP CONFIGURATION
+// ============================
 // use body parser so we can grab information from POST requests
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -31,30 +28,35 @@ app.use(function(req, res, next) {
 // log all requests to the console
 app.use(morgan('dev'));
 
-// ROUTES FOR OUR API
+// DATABASE
+// pull the user model within our application
+var User = require('./app/models/user');
+// connect to the mongodb database instance on localhost
+mongoose.connect(config.database);
+
+// set static files location
+// used for requests that our frontend will make
+app.use(express.static(__dirname + '/public'));
+
+// API ROUTES
 // =============================
 
-// basic route for the home page
-app.get('/', function(req, res) {
-	res.send('Welcome to the home page!');
-});
-
-// get an instance of the express router
-var apiRouter = express.Router();
-
-// test route to make sure everything is working
-// accessed at GET http://localhost:8080/api
-apiRouter.get('/', function(req, res) {
-	res.json({ message: 'hooray! welcome to our api!' });
-});
-
-// more routes for our API will happen here
+var apiRoutes = require('./app/routes/api')(app, express);
 
 // REGISTER OUR ROUTES -------------------------------
 // all of our routes will be prefixed with /api
-app.use('/api', apiRouter);
+app.use('/api', apiRoutes);
+
+// 	MAIN CATCHALL ROUTE
+// 	SENDS USERS TO THE FRONTEND
+// 	Has to be registered after API ROUTES
+
+app.get('*', function(req, res) {
+	res.sendFile(path.join(__dirname + '/public/app/views/index.html'));
+});
+
 
 // START THE SERVER
 // ===============================
-app.listen(port);
-console.log('Magic happens on port ' + port);
+app.listen(config.port);
+console.log('Magic happens on port ' + config.port);
